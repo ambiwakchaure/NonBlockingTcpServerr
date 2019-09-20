@@ -18,13 +18,8 @@ public class CloserThread {
                         t.cancel();
                     }
                 }*/
-
-                //System.out.println("Closer Thread Running...");
-                System.out.println("CLIENT_SOCKETS.size() : "+T.CLIENT_SOCKETS.size()+ " TimeStamp : "+T.getSystemDateTime());
-                System.out.println(T.CLIENT_SOCKETS);
                 if (!T.CLIENT_SOCKETS.isEmpty())
                 {
-
                     //do code here
                     for (String key : T.CLIENT_SOCKETS.keySet()) {
 
