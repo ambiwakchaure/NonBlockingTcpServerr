@@ -1,11 +1,12 @@
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ExceuteProtocol
 {
     //TS101
-    public static void executeProtocolTS101(String hexString, Socket clientSocket)
+    public static void executeProtocolTS101(String hexString, SocketChannel clientSocket)
     {
         try
         {
@@ -31,7 +32,7 @@ public class ExceuteProtocol
                             T.storeSockets(clientSocket, serialNumber);
                             T.updateDeviceStatus(serialNumber, "1");
                             server_created_date = T.getSystemDateTime();
-                            client_address = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                            client_address = clientSocket.getRemoteAddress().toString().replace("/", "");
 
                             //pass string for decoding
                             String[] dataArrayDecode = {Constants.IMEI + "#" + serialNumber, Constants.DEVICE_STRING + "#" + bString};
@@ -78,7 +79,7 @@ public class ExceuteProtocol
             LogMaster.saveExceptionLogDetails("ExceuteProtocol.executeProtocolTS101() 78", "" + e);
         }
     }
-    public static void executeProtocolAIS140(String hexString, Socket clientSocket)
+    public static void executeProtocolAIS140(String hexString, SocketChannel clientSocket)
     {
         try
         {
@@ -96,7 +97,7 @@ public class ExceuteProtocol
                 if (startBit.equals("$") && endBit.equals("*")) {
                     String server_ack, string_type;
                     server_created_date = T.getSystemDateTime();
-                    client_address = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                    client_address = clientSocket.getRemoteAddress().toString().replace("/", "");
                     String imei = null;
                     int packet_length = dataArrayAis140.length;
                     //login packet
@@ -172,9 +173,9 @@ public class ExceuteProtocol
                         } else {
                             System.out.println("socket close from server");
                             //remove socket data when socket close
-                            String key = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                            String key = clientSocket.getRemoteAddress().toString().replace("/", "");
                             T.CLIENT_SOCKETS.remove(key);
-                            LogMaster.saveOpenCloseDevie(clientSocket.getRemoteSocketAddress().toString().replace("/", ""), "close");
+                            LogMaster.saveOpenCloseDevie(clientSocket.getRemoteAddress().toString().replace("/", ""), "close");
                             //save device count
                             LogMaster.clearFile();
                             LogMaster.deviceStat("" + T.CLIENT_SOCKETS.size());
@@ -182,9 +183,7 @@ public class ExceuteProtocol
                             LogMaster.saveDeviceDetails(
                                     "Disconected",
                                     "NA",
-                                    String.valueOf(clientSocket.getPort()),
-                                    String.valueOf(clientSocket.getLocalPort()),
-                                    String.valueOf(clientSocket.getRemoteSocketAddress().toString().replace("/", "")),
+                                    String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
                                     "Packet Name: not found,Exception : bytes == -1");
                             break;
                         }
@@ -202,7 +201,7 @@ public class ExceuteProtocol
         }
     }
 
-    public static void executeProtocolGT06(String hexString, Socket clientSocket)
+    public static void executeProtocolGT06(String hexString, SocketChannel clientSocket)
     {
 
         try
@@ -224,7 +223,7 @@ public class ExceuteProtocol
                     String[] device_string_data = device_string.split(" ");
                     if (device_string_data[0].equals("78") && device_string_data[1].equals("78")) {
                         server_created_date = T.getSystemDateTime();
-                        client_address = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                        client_address = clientSocket.getRemoteAddress().toString().replace("/", "");
 
                         if (device_string != null || device_string.length() > 0) {
                             String[] splitarray = device_string.split(" ");
@@ -429,9 +428,9 @@ public class ExceuteProtocol
                                     } else {
                                         System.out.println("socket close from server");
                                         //remove socket data when socket close
-                                        String key = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                                        String key = clientSocket.getRemoteAddress().toString().replace("/", "");
                                         T.CLIENT_SOCKETS.remove(key);
-                                        LogMaster.saveOpenCloseDevie(clientSocket.getRemoteSocketAddress().toString().replace("/", ""), "close");
+                                        LogMaster.saveOpenCloseDevie(clientSocket.getRemoteAddress().toString().replace("/", ""), "close");
                                         //save device count
                                         LogMaster.clearFile();
                                         LogMaster.deviceStat("" + T.CLIENT_SOCKETS.size());
@@ -439,9 +438,7 @@ public class ExceuteProtocol
                                         LogMaster.saveDeviceDetails(
                                                 "Disconected",
                                                 "NA",
-                                                String.valueOf(clientSocket.getPort()),
-                                                String.valueOf(clientSocket.getLocalPort()),
-                                                String.valueOf(clientSocket.getRemoteSocketAddress().toString().replace("/", "")),
+                                                String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
                                                 "Packet Name: not found,Exception : bytes == -1");
                                         clientSocket.close();
                                     }

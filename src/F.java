@@ -1,10 +1,11 @@
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 public class F {
 
-    public static void addInvalidString(String device_string, Socket clientSocket) {
+    public static void addInvalidString(String device_string, SocketChannel clientSocket) {
         try {
             //store socket details
             T.storeSockets(clientSocket, "NA");
@@ -12,12 +13,10 @@ public class F {
                 LogMaster.saveDeviceDetails(
                         "Conected",
                         "NA",
-                        String.valueOf(clientSocket.getPort()),
-                        String.valueOf(clientSocket.getLocalPort()),
-                        String.valueOf(clientSocket.getRemoteSocketAddress().toString().replace("/", "")),
+                        String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
                         "Packet not found");
                 //store invalid string in file
-                String storeContent = "\r\n Date : " + T.getSystemDateTime() + "\r\n Imei : NA\r\n String : " + device_string + "\r\n Client Ip :" + clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                String storeContent = "\r\n Date : " + T.getSystemDateTime() + "\r\n Imei : NA\r\n String : " + device_string + "\r\n Client Ip :" + clientSocket.getRemoteAddress().toString().replace("/", "");
                 LogMaster.storeValidInvalidString(storeContent, "invalid");
                 System.out.println("Invalid String");
             } catch (IOException ex) {
@@ -29,7 +28,7 @@ public class F {
         }
     }
 
-    public static void saveIncomingData(String imei,Socket clientSocket, String imei_packet, String string_type, String packet_length, String hexString, String server_created_date, String client_address) {
+    public static void saveIncomingData(String imei,SocketChannel clientSocket, String imei_packet, String string_type, String packet_length, String hexString, String server_created_date, String client_address) {
         String server_ack;
         server_ack = "$" + imei_packet + "*";
         String[] dataArrayDecode = {Constants.IMEI + "#" + imei_packet, Constants.DEVICE_STRING + "#" + hexString};

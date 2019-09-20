@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -26,8 +25,9 @@ public class MainClass
         serverSocketChannel.bind(new InetSocketAddress(host, Constants.SERVER_PORT));
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         SelectionKey key = null;
-        SocketChannel client = null;
-        Socket clientSocket = null;
+        SocketChannel clientSocket = null;
+        //close unwanted socket after 5 min delay
+        CloserThread.closeDeadSockets();
 
         while (true)
         {
@@ -43,10 +43,24 @@ public class MainClass
                     iterator.remove();
                     if (key.isAcceptable())
                     {
-                        SocketChannel sc = serverSocketChannel.accept();
-                        sc.configureBlocking(false);
-                        sc.register(selector, SelectionKey.OP_READ);
+                        clientSocket = serverSocketChannel.accept();
+                        clientSocket.configureBlocking(false);
+                        clientSocket.register(selector, SelectionKey.OP_READ);
                         //System.out.println("Connection Accepted: " + sc.getLocalAddress());
+
+
+                        //store socket details
+                        T.storeSockets(clientSocket, "NA");
+
+                        //save device count
+                        LogMaster.clearFile();
+                        LogMaster.deviceStat("" + T.CLIENT_SOCKETS.size());
+
+                        LogMaster.saveDeviceDetails(
+                                "Connected",
+                                "NA",
+                                String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
+                                "Packet name not found, devicec connection time");
                         System.out.println("Device connected");
                     }
                     String hexString = "";
@@ -62,9 +76,6 @@ public class MainClass
                         {
                             System.out.println("-----------------------------------------------------------------");
                             System.out.println("Data : "+ hexString);
-                            //get client socket
-                            client = serverSocketChannel.accept();
-                            clientSocket = client.socket();
 
                             if (hexString.contains("$,5,"))
                             {
@@ -73,6 +84,7 @@ public class MainClass
                                 {
                                     String command = commandData[0]+"#";
                                     String imei = commandData[1];
+
                                     String webimei = imei+"web";
                                     T.storeCommandSockets(webimei,clientSocket);
                                     T.writeCommand(clientSocket, imei, command);
@@ -82,11 +94,11 @@ public class MainClass
                             {
                                 if(T.CLIENT_SOCKETS_CMD.containsValue(clientSocket))
                                 {
-                                    for (Map.Entry<String, Socket> entry : T.CLIENT_SOCKETS_CMD.entrySet())
+                                    for (Map.Entry<String, SocketChannel> entry : T.CLIENT_SOCKETS_CMD.entrySet())
                                     {
                                         if (Objects.equals(clientSocket, entry.getValue()))
                                         {
-                                            Socket webSocket = T.CLIENT_SOCKETS_CMD.get(entry.getKey()+"web");
+                                            SocketChannel webSocket = T.CLIENT_SOCKETS_CMD.get(entry.getKey()+"web");
                                             String keyImei = entry.getKey();
                                             T.writeMessage(keyImei,webSocket, hexString);
                                             LogMaster.writeCommandLog(webSocket,keyImei, hexString, "1");
@@ -123,7 +135,7 @@ public class MainClass
                             sc.close();
                             System.out.println("socket close from client");
                             //remove socket data when socket close
-                            String keyData = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                            String keyData = clientSocket.getRemoteAddress().toString().replace("/", "");
                             SocketInfo info = T.CLIENT_SOCKETS.get(keyData);
                             //update device status
                             String imei = info.getDeviceId();
@@ -132,7 +144,7 @@ public class MainClass
                                 T.updateDeviceStatus(info.getDeviceId(), "0");
                             }
                             T.CLIENT_SOCKETS.remove(keyData);
-                            LogMaster.saveOpenCloseDevie(clientSocket.getRemoteSocketAddress().toString().replace("/", ""), "close");
+                            LogMaster.saveOpenCloseDevie(clientSocket.getRemoteAddress().toString().replace("/", ""), "close");
                             //save device count
                             LogMaster.clearFile();
                             LogMaster.deviceStat("" + T.CLIENT_SOCKETS.size());
@@ -140,9 +152,7 @@ public class MainClass
                             LogMaster.saveDeviceDetails(
                                     "Disconected",
                                     "NA",
-                                    String.valueOf(clientSocket.getPort()),
-                                    String.valueOf(clientSocket.getLocalPort()),
-                                    String.valueOf(clientSocket.getRemoteSocketAddress().toString().replace("/", "")),
+                                    String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
                                     "Packet Name: not found,Exception : bytes == -1");
                             break;
                         }
@@ -151,19 +161,17 @@ public class MainClass
             }
             catch (IOException e)
             {
-                String keyData = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+                String keyData = clientSocket.getRemoteAddress().toString().replace("/", "");
                 SocketInfo info = T.CLIENT_SOCKETS.get(keyData);
                 //update device status
-
                 T.CLIENT_SOCKETS.remove(keyData);
                 System.out.println("socket close from server");
                 try {
                     //save device count
                     LogMaster.clearFile();
                     LogMaster.deviceStat("" + T.CLIENT_SOCKETS.size());
-                    LogMaster.saveOpenCloseDevie(clientSocket.getRemoteSocketAddress().toString().replace("/", ""), "close");
+                    LogMaster.saveOpenCloseDevie(clientSocket.getRemoteAddress().toString().replace("/", ""), "close");
                 } catch (IOException ex) {
-
                 }
                 break;
             }

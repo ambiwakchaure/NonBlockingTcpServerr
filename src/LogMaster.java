@@ -1,10 +1,11 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 public class LogMaster {
 
     public static void writeCommandLog(
-            Socket clienSocket,
+            SocketChannel clienSocket,
             String imei,
             String command,
             String response) {
@@ -14,7 +15,7 @@ public class LogMaster {
         BufferedWriter bufferedWriter = null;
         FileWriter fileWriter = null;
         try {
-            String content = "IMEI :" + imei + "\r\nClient IP :" + clienSocket.getRemoteSocketAddress().toString().replace("/", "") + "\r\nCommand :" + command + "\r\nResponse :" + response + "\r\nTimeStamp :" + T.getSystemDateTime();
+            String content = "IMEI :" + imei + "\r\nClient IP :" + clienSocket.getRemoteAddress().toString().replace("/", "") + "\r\nCommand :" + command + "\r\nResponse :" + response + "\r\nTimeStamp :" + T.getSystemDateTime();
             fileWriter = new FileWriter(log, true);
 
             bufferedWriter = new BufferedWriter(fileWriter);
@@ -158,8 +159,6 @@ public class LogMaster {
     public static void saveDeviceDetails(
             String status,
             String deviceID,
-            String clientPort,
-            String clientLocalPort,
             String clientLocalAddress,
             String packetName) throws IOException {
 
@@ -175,8 +174,6 @@ public class LogMaster {
                     = "Status :" + status
                     + "\r\nPacket Name :" + packetName
                     + "\r\nDevice ID :" + deviceID
-                    + "\r\nDevice Port :" + clientPort
-                    + "\r\nDevice Local Port :" + clientLocalPort
                     + "\r\nDevice Local Address :" + clientLocalAddress
                     + "\r\nDate Time :" + T.getSystemDateTime();
 

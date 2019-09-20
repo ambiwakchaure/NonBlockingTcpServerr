@@ -1,8 +1,9 @@
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 public class SocketInfo {
 
-    private Socket clientSocket;
+    private SocketChannel clientSocket;
     private String csIpPort;
     private String dateTime;
     private String deviceId;
@@ -15,11 +16,11 @@ public class SocketInfo {
         this.deviceId = deviceId;
     }
 
-    public Socket getClientSocket() {
+    public SocketChannel getClientSocket() {
         return clientSocket;
     }
 
-    public void setClientSocket(Socket clientSocket) {
+    public void setClientSocket(SocketChannel clientSocket) {
         this.clientSocket = clientSocket;
     }
 

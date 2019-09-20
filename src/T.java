@@ -2,6 +2,8 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -11,9 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class T {
     public static ConcurrentHashMap<String, SocketInfo> CLIENT_SOCKETS = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, Socket> CLIENT_SOCKETS_CMD = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, SocketChannel> CLIENT_SOCKETS_CMD = new ConcurrentHashMap<>();
 
-    public static void storeCommandSockets(String imei, Socket clientSocket)
+    public static void storeCommandSockets(String imei, SocketChannel clientSocket)
     {
         try
         {
@@ -32,7 +34,7 @@ public class T {
             LogMaster.saveExceptionLogDetails("VtsRunnable 560", "" + e);
         }
     }
-    public static void writeCommand(Socket clienSocket, String device_id, String command)
+    public static void writeCommand(SocketChannel clienSocket, String device_id, String command)
     {
         try
         {
@@ -61,10 +63,10 @@ public class T {
         String decodeResponse = RequestClass.sendingPostRequest(Constants.UPDATE_DEVICE_STATUS, dataArrayDecode);
     }
 
-    public static String returnImei(Socket clientSocket) {
+    public static String returnImei(SocketChannel clientSocket) {
         String returnImei = "2";
         try {
-            String key = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
+            String key = clientSocket.getRemoteAddress().toString().replace("/", "");
             if (CLIENT_SOCKETS.containsKey(key)) {
                 SocketInfo info = CLIENT_SOCKETS.get(key);
                 returnImei = "1#" + info.getDeviceId();
@@ -81,34 +83,34 @@ public class T {
 
     }
 
-    public static void storeSockets(Socket clientSocket, String imei) {
-        String key = clientSocket.getRemoteSocketAddress().toString().replace("/", "");
-        if (CLIENT_SOCKETS.containsKey(key)) {
+    public static void storeSockets(SocketChannel clientSocket, String imei) {
 
-            SocketInfo info = CLIENT_SOCKETS.get(key);
-            String[] data = T.getSystemDateTime().split(" ");
-            info.setClientSocket(clientSocket);
-            info.setCsIpPort(key);
-            info.setDateTime(data[1]);
-            info.setDeviceId(imei);
+        try
+        {
+            String key = clientSocket.getRemoteAddress().toString().replace("/", "");
+            if (CLIENT_SOCKETS.containsKey(key)) {
 
-            CLIENT_SOCKETS.replace(key, info);
-        } else {
-            SocketInfo info = new SocketInfo();
-            info.setClientSocket(clientSocket);
-            info.setCsIpPort(clientSocket.getRemoteSocketAddress().toString().replace("/", ""));
-            info.setDeviceId(imei);
-            String[] data = T.getSystemDateTime().split(" ");
-            info.setDateTime(data[1]);
-            CLIENT_SOCKETS.put(clientSocket.getRemoteSocketAddress().toString().replace("/", ""), info);
-        }
-        try {
+                SocketInfo info = CLIENT_SOCKETS.get(key);
+                String[] data = T.getSystemDateTime().split(" ");
+                info.setClientSocket(clientSocket);
+                info.setCsIpPort(key);
+                info.setDateTime(data[1]);
+                info.setDeviceId(imei);
+
+                CLIENT_SOCKETS.replace(key, info);
+            } else {
+                SocketInfo info = new SocketInfo();
+                info.setClientSocket(clientSocket);
+                info.setCsIpPort(clientSocket.getRemoteAddress().toString().replace("/", ""));
+                info.setDeviceId(imei);
+                String[] data = T.getSystemDateTime().split(" ");
+                info.setDateTime(data[1]);
+                CLIENT_SOCKETS.put(clientSocket.getRemoteAddress().toString().replace("/", ""), info);
+            }
             LogMaster.saveDeviceDetails(
                     "Conected",
                     imei,
-                    String.valueOf(clientSocket.getPort()),
-                    String.valueOf(clientSocket.getLocalPort()),
-                    String.valueOf(clientSocket.getRemoteSocketAddress().toString().replace("/", "")),
+                    String.valueOf(clientSocket.getRemoteAddress().toString().replace("/", "")),
                     "Location Packet");
         }
         catch (IOException ex) {
@@ -365,14 +367,23 @@ public class T {
         return output.toString();
     }
 
-    public static void writeMessage(String imei,Socket clientSocket, String serverAck) {
+    public static void writeMessage(String imei,SocketChannel clientSocket, String serverAck) {
         try
         {
-            OutputStream os = clientSocket.getOutputStream();
+            /*OutputStream os = clientSocket.getOutputStream();
             OutputStreamWriter osw = new OutputStreamWriter(os);
             BufferedWriter bw = new BufferedWriter(osw);
             bw.write(serverAck);
-            bw.flush();
+            bw.flush();*/
+            ByteBuffer buf = ByteBuffer.allocate(48);
+            buf.clear();
+            buf.put(serverAck.getBytes());
+
+            buf.flip();
+
+            while(buf.hasRemaining()) {
+                clientSocket.write(buf);
+            }
         } catch (Exception e) {
 
         }
